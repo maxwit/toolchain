@@ -1,0 +1,12 @@
+
+target:
+1. install software
+2. system configuration
+3. populate /maxwit dir
+4. build toolchain
+
+design:
+
+design (issue):
+1. integerate toolchain or not? dependence, or say, common subset (A: NO!)
+2. Bash or Python? A: Python

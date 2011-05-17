@@ -1,0 +1,442 @@
+#!/bin/sh
+#
+# The Main Script for Building MaxWit Toolchain
+#
+# http://www.maxwit.com
+# http://maxwit.github.com
+# http://maxwit.googlecode.com
+#
+
+
+MW_TOP_DIR=`dirname $0`
+cd ${MW_TOP_DIR}
+MW_TOP_DIR=${PWD}
+
+
+# Toolchain packages:
+MWP_KERNEL="linux-2.6.36"
+MWP_BINUTILS="binutils-2.20.1"
+MWP_GCC_VER="4.4.4"
+MWP_GCC="gcc-${MWP_GCC_VER}"
+#GLIBC_VER="2.11"
+GLIBC_VER="2.10.1"
+#MWP_GLIBC="glibc-${GLIBC_VER}"
+#MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
+MWP_GLIBC="eglibc-${GLIBC_VER}"
+MWP_GLIBC_PORTS="eglibc-ports-${GLIBC_VER}"
+
+# other packages
+. ./pkg_list
+
+BUILD_ARCH=`uname -m`
+BUILD_PLAT=`gcc -dumpmachine`
+
+if [ "${BUILD_ARCH}" = x86_64 ]; then
+	LIB_CFLAGS="-fPIC"
+fi
+
+# fixme: prompt
+TARGET_CPU="arm1176jzf-s"
+
+case "${TARGET_CPU}" in
+	arm920t)
+		TARGET_ARCH="arm"
+		TARGET_PLAT="arm-maxwit-linux-gnueabi"
+		BU_CPU_OPT="--with-float=soft"
+		GCC_CPU_OPT="--with-float=soft --with-arch=armv4t --with-tune=arm920t"
+		;;
+
+	arm1176jzf-s)
+		TARGET_ARCH="arm"
+		TARGET_PLAT="arm-maxwit-linux-gnueabi"
+		GCC_CPU_OPT="--with-arch=armv6zk --with-tune=arm1176jzf-s"
+		;;
+
+	arm926ej-s)
+		TARGET_ARCH="arm"
+		TARGET_PLAT="arm-maxwit-linux-gnueabi"
+		BU_CPU_OPT="--with-float=soft"
+		GCC_CPU_OPT="--with-float=soft --with-arch=armv5te --with-tune=arm926ej-s"
+		;;
+
+	# fixme
+	xscale)
+		TARGET_ARCH="arm"
+		TARGET_PLAT="arm-maxwit-linux-gnueabi"
+		BU_CPU_OPT="--with-float=soft"
+		GCC_CPU_OPT="--with-float=soft --with-arch=armv5te --with-tune=arm926ej-s"
+		;;
+
+	cortex-a8)
+		TARGET_ARCH="arm"
+		TARGET_PLAT="arm-maxwit-linux-gnueabi"
+		GCC_CPU_OPT="--with-arch=armv7-a --with-tune=cortex-a8"
+		;;
+
+	# fixme
+	mips32)
+		TARGET_ARCH="mips"
+		QEMU_ARCH="mipsel"
+		TARGET_PLAT="mipsel-maxwit-linux-gnu"
+		GCC_CPU_OPT="--with-abi=32 --with-tune=mips32r2"
+		;;
+
+	loongson2f)
+		TARGET_ARCH="mips"
+		QEMU_ARCH="mips64el"
+		TARGET_PLAT="mips64el-maxwit-linux-gnu"
+		GCC_CPU_OPT="--with-abi=64 --with-tune=loongson2f"
+		BU_CPU_OPT="--enable-64-bit-bfd"
+		GLIBC_BUILDING_GCC="${TARGET_PLAT}-gcc -mabi=64"
+		;;
+
+	*)
+		echo "No Target CPU Specified!"
+		exit 1
+		;;
+esac
+
+# fixme:
+# the default path of source packages
+# MAXWIT_TOP=${HOME}/maxwit
+MAXWIT_TOP=/maxwit
+SRC_PATH=${MAXWIT_TOP}/source
+BUILD_PATH=${MAXWIT_TOP}/build
+# ROOTFS_PATH=${MAXWIT_TOP}/rootfs
+TOOLCHAIN_PATH=${MAXWIT_TOP}/toolchain/${TARGET_ARCH}
+# UTILS_ROOT=${MAXWIT_TOP}/utils
+
+for path in ${TOOLCHAIN_PATH} ${SRC_PATH} ${BUILD_PATH}
+do
+	mkdir -vp ${path} || \
+	{
+		echo "Fail to create directory \"${path}\"!"
+		exit 1
+	}
+done
+
+export ROOTFS_PATH TOOLCHAIN_PATH BUILD_PLAT TARGET_PLAT
+# fixme
+export UTILS_ROOT GCC_CPU_OPT
+
+# fixme
+[ -z "${GLIBC_BUILDING_GCC}" ] && export GLIBC_BUILDING_GCC="${TARGET_PLAT}-gcc"
+[ -z "${QEMU_ARCH}" ] && QEMU_ARCH=${TARGET_ARCH}
+
+# $1: package name
+extract()
+{
+	local opkg="${1}"
+	local upkg=""
+	local pkg_tag=${opkg%-*}
+	local pkg_ver=${opkg##*-}
+
+	cd ${BUILD_PATH}
+
+	case "${opkg}" in
+	binutils-* | glibc-* | eglibc-*)
+		upkg=${pkg_tag}-build
+		# rm -rf ${upkg}
+		mkdir -p ${upkg}
+		;;
+
+	gcc-*)
+		upkg=${pkg_tag}-build1
+		# rm -rf ${upkg}
+		mkdir -p ${upkg}
+		;;
+
+	*)
+		upkg="${opkg}"
+		;;
+	esac
+
+	# fixme
+	if [ -d ${opkg} ]; then
+		echo "package \"${opkg}\" exists, skipped"
+		cd ${upkg}
+		echo
+		return 0
+	fi
+
+	echo -n "Extracting \"${opkg}\" "
+
+	if [ -z "${opkg}" ]; then
+		echo "target dir NOT specified!"
+		exit 1
+	fi
+
+	echo -n "."
+
+	mkdir -p __temp__
+
+	if test -f ${SRC_PATH}/${opkg}.tar.bz2; then
+		tar jxf ${SRC_PATH}/${opkg}.tar.bz2 -C __temp__ || exit 1
+	elif test -f ${SRC_PATH}/${opkg}.tar.gz; then
+		tar zxf ${SRC_PATH}/${opkg}.tar.gz -C __temp__ || exit 1
+	elif test -f ${SRC_PATH}/${opkg}.tar.xz; then
+		tar Jxf ${SRC_PATH}/${opkg}.tar.xz -C __temp__ || exit 1
+	else
+		tar xf ${SRC_PATH}/${opkg}* -C __temp__ || exit 1
+	fi
+
+	echo -n "."
+
+	# care about symbolic link?
+	rm -rf ${opkg} && \
+	mv __temp__/* ${opkg} && \
+	rm -rf __temp__ \
+	|| exit 1
+
+	echo -n "."
+
+	case "${opkg}" in
+	glibc-*)
+		rm -rf glibc-ports-${GLIBC_VER}
+		tar xf ${SRC_PATH}/glibc-ports-${GLIBC_VER}.tar.* || exit 1
+		mv glibc-ports-${GLIBC_VER} ${MWP_GLIBC}/ports
+		;;
+    eglibc-*)
+		tar xf ${SRC_PATH}/eglibc-ports-${GLIBC_VER}.tar.* -C ${MWP_GLIBC} || exit 1
+		;;
+	esac
+
+	echo  " OK."
+
+	cd ${opkg} || exit 1
+
+	# make sure ``patch'' is installed
+	# before applying all available patches
+	for fpatch in `ls ${MW_TOP_DIR}/${pkg_tag}/${pkg_ver}/*.patch 2>/dev/null`
+	do
+		patch -p1 -i ${fpatch} || exit 1
+	done
+
+	if [ "${opkg}" != "${upkg}" ]; then
+		cd ../${upkg}
+	fi
+}
+
+
+# Downlaod packages
+download_pkg()
+{
+	local pkg_link_list
+	local pkg_link
+
+	local DL_CMD="wget -t 10 -w 5 -P ${SRC_PATH} -c"
+
+	pkg_link_list=${1}
+	shift
+
+	cd ${SRC_PATH}
+
+	while test $# -ge 1
+	do
+		for pkg_link in ${pkg_link_list}
+		do
+			if [ -n "`echo ${pkg_link} | grep ${1}`" ];then
+				pkg_name=`basename ${pkg_link}`
+				if [ ! -f "${pkg_name}" ]; then
+					${DL_CMD} ${pkg_link} -O ${pkg_name}
+				fi
+			fi
+		done
+
+		shift
+	done
+}
+
+
+print_link()
+{
+	local pkg_link_list
+	local pkg_link
+	local mw_pkg_url="${SRC_PATH}/mw_pkg_url.txt"
+
+	pkg_link_list=${1}
+	shift
+
+	rm -rf ${mw_pkg_url}
+
+	echo
+	echo "Generating package URLs:"
+	while test $# -ge 1
+	do
+		for pkg_link in ${pkg_link_list}
+		do
+			if [ -n "`echo ${pkg_link} | grep ${1}`" ];then
+				echo ${pkg_link} >>  ${mw_pkg_url}
+				echo "    ${pkg_link}"
+			fi
+		done
+		shift
+	done
+
+	echo
+	echo "All URLs are generated and saved to file \"${mw_pkg_url}\"."
+	echo "You may get them later with your favorate download utility :P"
+	echo
+}
+
+# one and only one argument is accepted!!
+check_pkgs()
+{
+	local lost_list=""
+	local pkg=""
+	local yes
+
+	for pkg in $1
+	do
+		ls ${SRC_PATH}/${pkg}.tar.gz > /dev/null 2>&1 || \
+		ls ${SRC_PATH}/${pkg}.tar.bz2 > /dev/null 2>&1 || \
+		ls ${SRC_PATH}/${pkg}.tgz > /dev/null 2>&1 || \
+		ls ${SRC_PATH}/${pkg}[ab].tar.gz > /dev/null 2>&1 || \
+		ls ${SRC_PATH}/${pkg}[ab].tar.bz2 > /dev/null 2>&1 || \
+		ls ${SRC_PATH}/${pkg}[ab].tgz > /dev/null 2>&1 || \
+		{
+			if [ -z "${lost_list}" ]; then
+				lost_list="${pkg}"
+			else
+				lost_list="${lost_list} ${pkg}"
+			fi
+		}
+	done
+
+	[ -z "${lost_list}" ] && return 0
+
+	echo
+	echo
+	echo "Following packages cound NOT be found in \"${SRC_PATH}\":"
+	for pkg in ${lost_list}
+	do
+		echo "    $pkg"
+	done
+
+	echo
+
+	echo
+	echo -n "Download them now? (y/n) "
+	read dl
+
+	if [ "${dl}" = "y" -o "${dl}" = "Y" -o "${dl}" = "dl" -o "${dl}" = "Yes" ]; then
+		download_pkg "${PLINK_LIST}" ${lost_list}
+	else
+		print_link "${PLINK_LIST}" ${lost_list}
+		exit 1
+	fi
+}
+
+
+# fixme for loop dependency
+# $1 = package
+build_package()
+{
+	local df=""
+	local pkg=${1}
+	local sub_dir=`echo ${pkg} | sed 's:-\([0-9]\):/\1:'`
+	local src_dir="${BUILD_PATH}/${pkg}"
+	local built_flag=".__maxwit_built"
+
+	sub_dir="${MW_TOP_DIR}/${sub_dir}"
+
+	if [ -f "${src_dir}/${built_flag}" ]; then
+		echo "\"${1}\" has been built."
+		echo
+		return 0
+	fi
+
+	if [ -f ${sub_dir}/dep ]; then
+		for df in `cat ${sub_dir}/dep`
+		do
+			build_package ${df} || return 1
+		done
+	fi
+
+	check_pkgs ${pkg}
+
+	extract ${pkg}
+
+	echo "Building \"${pkg}\" ..."
+
+	# fixme
+	if test -x ${sub_dir}/build.sh; then
+		${sub_dir}/build.sh || exit 1
+	else
+		./configure \
+			--prefix=/usr \
+			--host=${TARGET_PLAT} \
+			--build=${BUILD_PLAT} \
+			|| exit 1
+
+		make && \
+		make DESTDIR=${TOOLCHAIN_PATH} install || exit 1
+	fi
+
+	if test -x ${sub_dir}/setup.sh; then
+		cd ${sub_dir} && \
+		. ./setup.sh || exit 1
+	fi
+
+	touch ${src_dir}/${built_flag}
+	echo
+
+	return 0
+}
+
+
+build_toolchain()
+{
+	grep "${TOOLCHAIN_PATH}" ~/.bashrc > /dev/null \
+		|| echo "export PATH=\${PATH}:${TOOLCHAIN_PATH}/usr/bin" >> ~/.bashrc
+
+	echo ${PATH} | grep "${TOOLCHAIN_PATH}" > /dev/null \
+		|| export PATH=${PATH}:${TOOLCHAIN_PATH}/usr/bin
+
+
+	check_pkgs ${MWP_KERNEL}
+
+	extract ${MWP_KERNEL}
+	if [ ! -f .__maxwit_kernel_header_installed ]; then
+		make ARCH=${TARGET_ARCH} INSTALL_HDR_PATH=${TOOLCHAIN_PATH}/usr headers_install || exit 1
+		touch .__maxwit_kernel_header_installed
+	fi
+
+	export MWP_BINUTILS MWP_GCC MWP_GLIBC
+
+	for pkg in \
+		${MWP_BINUTILS} \
+		${MWP_GCC} \
+		${MWP_GLIBC} \
+		;
+	do
+		build_package ${pkg}
+		echo
+	done
+
+	if [ ! -f ${BUILD_PATH}/toolchain/${MWP_GCC}/.__maxwit_gccp2_built ]; then
+		gccp2_path=${BUILD_PATH}/gcc-build2 && \
+		mkdir -p ${gccp2_path} && \
+		cd ${gccp2_path} && \
+		${MW_TOP_DIR}/gcc/${MWP_GCC_VER}/build_pass2.sh || exit 1
+		touch ../${MWP_GCC}/.__maxwit_gccp2_built
+
+		# fixme
+		cd ${TOOLCHAIN_PATH}/usr/bin
+		for file in `ls ${TARGET_PLAT}-*`
+		do
+			ln -vs ${file} ${TARGET_ARCH}-linux${file##${TARGET_PLAT}}
+		done
+
+		ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
+
+		echo -n "Archive GNU Toolchain ..." # rootfs
+		cd ${TOOLCHAIN_PATH}/../
+		dn=`basename ${TOOLCHAIN_PATH}`
+		tar cf ${dn}.tar ${dn}
+		echo
+	fi
+}
+
+
+build_toolchain
