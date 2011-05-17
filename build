@@ -14,19 +14,22 @@ MW_TOP_DIR=${PWD}
 
 
 # Toolchain packages:
-MWP_KERNEL="linux-2.6.36"
+MWP_KERNEL="linux-2.6.38"
 MWP_BINUTILS="binutils-2.20.1"
+###
 MWP_GCC_VER="4.4.4"
 MWP_GCC="gcc-${MWP_GCC_VER}"
+###
 #GLIBC_VER="2.11"
-GLIBC_VER="2.10.1"
 #MWP_GLIBC="glibc-${GLIBC_VER}"
 #MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
+###
+GLIBC_VER="2.10.1"
 MWP_GLIBC="eglibc-${GLIBC_VER}"
 MWP_GLIBC_PORTS="eglibc-ports-${GLIBC_VER}"
 
 # other packages
-. ./pkg_list
+#. ./pkg_list
 
 BUILD_ARCH=`uname -m`
 BUILD_PLAT=`gcc -dumpmachine`
@@ -96,15 +99,14 @@ case "${TARGET_CPU}" in
 		;;
 esac
 
-# fixme:
-# the default path of source packages
-# MAXWIT_TOP=${HOME}/maxwit
 MAXWIT_TOP=/maxwit
 SRC_PATH=${MAXWIT_TOP}/source
-BUILD_PATH=${MAXWIT_TOP}/build
-# ROOTFS_PATH=${MAXWIT_TOP}/rootfs
-TOOLCHAIN_PATH=${MAXWIT_TOP}/toolchain/${TARGET_ARCH}
-# UTILS_ROOT=${MAXWIT_TOP}/utils
+BUILD_PATH=${MAXWIT_TOP}/build/toolchain
+
+TARGET_TOP=/maxwit/target/${TARGET_CPU}
+ROOTFS_PATH=${TARGET_TOP}/rootfs
+TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
+# UTILS_ROOT=${TARGET_TOP}/utils
 
 for path in ${TOOLCHAIN_PATH} ${SRC_PATH} ${BUILD_PATH}
 do
@@ -429,14 +431,14 @@ build_toolchain()
 		done
 
 		ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
-
-		echo -n "Archive GNU Toolchain ..." # rootfs
-		cd ${TOOLCHAIN_PATH}/../
-		dn=`basename ${TOOLCHAIN_PATH}`
-		tar cf ${dn}.tar ${dn}
-		echo
 	fi
 }
 
-
 build_toolchain
+
+echo -n "Archive GNU Toolchain ..." # rootfs
+cd ${TOOLCHAIN_PATH}/../
+tc_bin=`basename ${TOOLCHAIN_PATH}`
+tc_lib=`basename ${ROOTFS_PATH}`
+tar cvf toolchain-${TARGET_CPU}.tar ${tc_bin} ${tc_lib}
+echo

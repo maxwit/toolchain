@@ -1,5 +1,5 @@
 # Toolchain packages:
-MWP_KERNEL="linux-2.6.36"
+MWP_KERNEL="linux-2.6.38"
 MWP_BINUTILS="binutils-2.20.1"
 MWP_GCC="gcc-4.4.4"
 #GLIBC_VER="2.11"
