@@ -105,10 +105,11 @@ BUILD_PATH=${MAXWIT_TOP}/build/toolchain
 
 TARGET_TOP=/maxwit/target/${TARGET_CPU}
 ROOTFS_PATH=${TARGET_TOP}/rootfs
+#ROOTFS_PATH=${TARGET_TOP}/toolchain
 TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
 # UTILS_ROOT=${TARGET_TOP}/utils
 
-for path in ${TOOLCHAIN_PATH} ${SRC_PATH} ${BUILD_PATH}
+for path in ${TOOLCHAIN_PATH} ${ROOTFS_PATH} ${SRC_PATH} ${BUILD_PATH}
 do
 	mkdir -vp ${path} || \
 	{
@@ -436,9 +437,11 @@ build_toolchain()
 
 build_toolchain
 
+###
 echo -n "Archive GNU Toolchain ..." # rootfs
+
 cd ${TOOLCHAIN_PATH}/../
-tc_bin=`basename ${TOOLCHAIN_PATH}`
-tc_lib=`basename ${ROOTFS_PATH}`
-tar cvf toolchain-${TARGET_CPU}.tar ${tc_bin} ${tc_lib}
+TC_BIN=`basename ${TOOLCHAIN_PATH}`
+tar cvf toolchain-${TARGET_CPU}.tar ${TC_BIN}
+
 echo

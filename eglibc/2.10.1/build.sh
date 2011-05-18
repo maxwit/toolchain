@@ -30,3 +30,11 @@ RANLIB="${TARGET_PLAT}-ranlib" \
     || exit 1
 
 make && make install || exit 1
+
+# fixme
+if [ ${ROOTFS_PATH} != ${TOOLCHAIN_PATH} ]; then
+	mkdir -p ${ROOTFS_PATH}/usr && \
+	cp -av ${TOOLCHAIN_PATH}/usr/include ${ROOTFS_PATH}/usr && \
+	cp -av ${TOOLCHAIN_PATH}/usr/lib ${ROOTFS_PATH}/usr && \
+	cp -av ${TOOLCHAIN_PATH}/lib ${ROOTFS_PATH}/ || exit 1
+fi

@@ -9,7 +9,7 @@
 	--build=${BUILD_PLAT} \
 	--host=${BUILD_PLAT} \
 	--target=${TARGET_PLAT} \
-	--with-sysroot=${TOOLCHAIN_PATH} \
+	--with-sysroot=${ROOTFS_PATH} \
 	--without-headers \
 	--with-newlib \
 	--disable-multilib \
