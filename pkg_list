@@ -1,9 +1,9 @@
 # Toolchain packages:
 MWP_KERNEL="linux-2.6.38"
-MWP_BINUTILS="binutils-2.20.1"
-MWP_GCC="gcc-4.4.4"
+MWP_BINUTILS="binutils-2.21"
+MWP_GCC="gcc-4.6.0"
 #GLIBC_VER="2.11"
-GLIBC_VER="2.10.1"
+GLIBC_VER="2.13"
 #MWP_GLIBC="glibc-${GLIBC_VER}"
 #MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
 MWP_GLIBC="eglibc-${GLIBC_VER}"
