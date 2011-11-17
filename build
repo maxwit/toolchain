@@ -206,7 +206,7 @@ extract()
 
 	# make sure ``patch'' is installed
 	# before applying all available patches
-	for fpatch in `ls ${MW_TOP_DIR}/${pkg_tag}/${pkg_ver}/*.patch 2>/dev/null`
+	for fpatch in `ls ${MW_TOP_DIR}/${opkg%-*}/${pkg_ver}/*.patch 2>/dev/null`
 	do
 		patch -p1 -i ${fpatch} || exit 1
 	done
