@@ -15,16 +15,16 @@ MW_TOP_DIR=${PWD}
 
 # Toolchain packages:
 MWP_KERNEL="linux-2.6.38"
-MWP_BINUTILS="binutils-2.21"
+MWP_BINUTILS="binutils-2.21.1"
 ###
-MWP_GCC_VER="4.6.0"
+MWP_GCC_VER="4.4.6"
 MWP_GCC="gcc-${MWP_GCC_VER}"
 ###
 #GLIBC_VER="2.11"
 #MWP_GLIBC="glibc-${GLIBC_VER}"
 #MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
 ###
-GLIBC_VER="2.13"
+GLIBC_VER="2.10.1"
 MWP_GLIBC="eglibc-${GLIBC_VER}"
 MWP_GLIBC_PORTS="eglibc-ports-${GLIBC_VER}"
 
@@ -171,6 +171,7 @@ extract()
 
 	echo -n "."
 
+	rm -rf __temp__
 	mkdir -p __temp__
 
 	if test -f ${SRC_PATH}/${opkg}.tar.bz2; then
