@@ -29,7 +29,7 @@ RANLIB="${TARGET_PLAT}-ranlib" \
     --cache-file=config.cache \
     || exit 1
 
-make -j8 && make install || exit 1
+make && make install || exit 1
 
 # fixme
 if [ ${ROOTFS_PATH} != ${TOOLCHAIN_PATH} ]; then

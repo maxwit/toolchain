@@ -24,7 +24,7 @@ MWP_GCC="gcc-${MWP_GCC_VER}"
 #MWP_GLIBC="glibc-${GLIBC_VER}"
 #MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
 ###
-GLIBC_VER="2.11"
+GLIBC_VER="2.13"
 MWP_GLIBC="eglibc-${GLIBC_VER}"
 MWP_GLIBC_PORTS="eglibc-ports-${GLIBC_VER}"
 
