@@ -16,9 +16,6 @@
 	${BU_CPU_OPT} \
 	|| exit 1
 
-#	--with-gmp=${UTILS_ROOT}/usr \
-#	--with-mpfr=${UTILS_ROOT}/usr \
-
 make && \
 make DESTDIR=${TOOLCHAIN_PATH} install || exit 1
 

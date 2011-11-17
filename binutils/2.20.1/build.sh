@@ -16,11 +16,7 @@
 	${BU_CPU_OPT} \
 	|| exit 1
 
-#	--with-gmp=${UTILS_ROOT}/usr \
-#	--with-mpfr=${UTILS_ROOT}/usr \
-
 make && \
 make DESTDIR=${TOOLCHAIN_PATH} install || exit 1
 
 cp -v ../${MWP_BINUTILS}/include/libiberty.h ${TOOLCHAIN_PATH}/usr/include
-# cp -v ../${MWP_BINUTILS}/include/libiberty.h ${TOOLCHAIN_PATH}/usr/include
