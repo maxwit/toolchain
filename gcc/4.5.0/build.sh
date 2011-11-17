@@ -10,8 +10,6 @@
 	--host=${BUILD_PLAT} \
 	--target=${TARGET_PLAT} \
 	--with-sysroot=${ROOTFS_PATH} \
-	--with-gmp=${UTILS_ROOT}/usr \
-	--with-mpfr=${UTILS_ROOT}/usr \
 	--without-headers \
 	--with-newlib \
 	--disable-multilib \

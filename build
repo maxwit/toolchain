@@ -17,7 +17,7 @@ MW_TOP_DIR=${PWD}
 MWP_KERNEL="linux-2.6.38"
 MWP_BINUTILS="binutils-2.21.1"
 ###
-MWP_GCC_VER="4.4.6"
+MWP_GCC_VER="4.6.2"
 MWP_GCC="gcc-${MWP_GCC_VER}"
 ###
 #GLIBC_VER="2.11"
@@ -363,14 +363,13 @@ build_package()
 	if test -x ${sub_dir}/build.sh; then
 		${sub_dir}/build.sh || exit 1
 	else
-		./configure \
-			--prefix=/usr \
-			--host=${TARGET_PLAT} \
-			--build=${BUILD_PLAT} \
-			|| exit 1
-
-		make && \
-		make DESTDIR=${TOOLCHAIN_PATH} install || exit 1
+		pkg_dir=`dirname ${sub_dir}`
+		if test -x ${pkg_dir}/build.sh; then
+			${pkg_dir}/build.sh || exit 1
+		else
+			echo "No build.sh found!"
+			exit 1
+		fi
 	fi
 
 	if test -x ${sub_dir}/setup.sh; then
@@ -415,10 +414,19 @@ build_toolchain()
 	done
 
 	if [ ! -f ${BUILD_PATH}/toolchain/${MWP_GCC}/.__maxwit_gccp2_built ]; then
-		gccp2_path=${BUILD_PATH}/gcc-build2 && \
+		gccp2_path=${BUILD_PATH}/${MWP_GCC}-build2 && \
 		mkdir -p ${gccp2_path} && \
-		cd ${gccp2_path} && \
-		${MW_TOP_DIR}/gcc/${MWP_GCC_VER}/build_pass2.sh || exit 1
+		cd ${gccp2_path} || exit 1
+
+		if [ -x ${MW_TOP_DIR}/gcc/${MWP_GCC_VER}/build_pass2.sh ]; then
+			${MW_TOP_DIR}/gcc/${MWP_GCC_VER}/build_pass2.sh || exit 1
+		elif [ -x ${MW_TOP_DIR}/gcc/build_pass2.sh ]; then
+			${MW_TOP_DIR}/gcc/build_pass2.sh
+		else
+			echo "No build_pass2.sh found!"
+			exit 1
+		fi
+
 		touch ../${MWP_GCC}/.__maxwit_gccp2_built
 
 		# fixme
