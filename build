@@ -24,7 +24,7 @@ MWP_GCC="gcc-${MWP_GCC_VER}"
 #MWP_GLIBC="glibc-${GLIBC_VER}"
 #MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
 ###
-GLIBC_VER="2.13"
+GLIBC_VER="2.11"
 MWP_GLIBC="eglibc-${GLIBC_VER}"
 MWP_GLIBC_PORTS="eglibc-ports-${GLIBC_VER}"
 
@@ -130,27 +130,22 @@ export UTILS_ROOT GCC_CPU_OPT
 extract()
 {
 	local opkg="${1}"
-	local upkg=""
-	local pkg_tag=${opkg%-*}
+	local upkg="${opkg}"
 	local pkg_ver=${opkg##*-}
 
 	cd ${BUILD_PATH}
 
 	case "${opkg}" in
 	binutils-* | glibc-* | eglibc-*)
-		upkg=${pkg_tag}-build
+		upkg=${opkg}-build
 		# rm -rf ${upkg}
 		mkdir -p ${upkg}
 		;;
 
 	gcc-*)
-		upkg=${pkg_tag}-build1
+		upkg=${opkg}-build1
 		# rm -rf ${upkg}
 		mkdir -p ${upkg}
-		;;
-
-	*)
-		upkg="${opkg}"
 		;;
 	esac
 
