@@ -39,7 +39,7 @@ if [ "${BUILD_ARCH}" = x86_64 ]; then
 fi
 
 # fixme: prompt
-TARGET_CPU="arm1176jzf-s"
+TARGET_CPU="cortex-a8"
 
 case "${TARGET_CPU}" in
 	arm920t)
@@ -73,7 +73,8 @@ case "${TARGET_CPU}" in
 	cortex-a8)
 		TARGET_ARCH="arm"
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
-		GCC_CPU_OPT="--with-arch=armv7-a --with-tune=cortex-a8"
+		BU_CPU_OPT="--with-float=hard"
+		GCC_CPU_OPT="--with-fpu=vfp --with-float=hard --with-arch=armv7-a --with-tune=cortex-a8"
 		;;
 
 	# fixme
