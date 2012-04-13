@@ -14,17 +14,17 @@ MW_TOP_DIR=${PWD}
 
 
 # Toolchain packages:
-MWP_KERNEL="linux-2.6.38"
-MWP_BINUTILS="binutils-2.21.1"
+MWP_KERNEL="linux-3.2.11"
+MWP_BINUTILS="binutils-2.22"
 ###
-MWP_GCC_VER="4.6.2"
+MWP_GCC_VER="4.7.0"
 MWP_GCC="gcc-${MWP_GCC_VER}"
 ###
 #GLIBC_VER="2.11"
 #MWP_GLIBC="glibc-${GLIBC_VER}"
 #MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
 ###
-GLIBC_VER="2.13"
+GLIBC_VER="2.15"
 MWP_GLIBC="eglibc-${GLIBC_VER}"
 MWP_GLIBC_PORTS="eglibc-ports-${GLIBC_VER}"
 
@@ -75,6 +75,13 @@ case "${TARGET_CPU}" in
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
 		BU_CPU_OPT="--with-float=hard"
 		GCC_CPU_OPT="--with-fpu=vfp --with-float=hard --with-arch=armv7-a --with-tune=cortex-a8"
+		;;
+
+	cortex-a9)
+		TARGET_ARCH="arm"
+		TARGET_PLAT="arm-maxwit-linux-gnueabi"
+		BU_CPU_OPT="--with-float=hard"
+		GCC_CPU_OPT="--with-fpu=vfp --with-float=hard --with-arch=armv7-a --with-tune=cortex-a9"
 		;;
 
 	# fixme
@@ -196,7 +203,7 @@ extract()
 		tar xf ${SRC_PATH}/glibc-ports-${GLIBC_VER}.tar.* || exit 1
 		mv glibc-ports-${GLIBC_VER} ${MWP_GLIBC}/ports
 		;;
-    eglibc-*)
+	eglibc-*)
 		tar xf ${SRC_PATH}/eglibc-ports-${GLIBC_VER}.tar.* -C ${MWP_GLIBC} || exit 1
 		;;
 	esac
@@ -405,9 +412,9 @@ build_toolchain()
 	export MWP_BINUTILS MWP_GCC MWP_GLIBC
 
 	for pkg in \
+		${MWP_GLIBC} \
 		${MWP_BINUTILS} \
 		${MWP_GCC} \
-		${MWP_GLIBC} \
 		;
 	do
 		build_package ${pkg}

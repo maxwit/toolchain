@@ -10,7 +10,7 @@
 	--host=${BUILD_PLAT} \
 	--target=${TARGET_PLAT} \
 	--with-sysroot=${ROOTFS_PATH} \
-	--with-pkgversion="http://www.maxwit.com, MaxWit Training" \
+	--with-pkgversion="MaxWit Software, http://www.maxwit.com" \
 	--disable-multilib \
 	--disable-nls \
 	--enable-shared \
