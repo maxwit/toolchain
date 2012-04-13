@@ -1,10 +1,11 @@
 #!/bin/sh
 #
-# The Main Script for Building MaxWit Toolchain
+# The Main Script for Building GNU Toolchain
+#
+# Conke Hu <conke.hu@gmail.com>
+# Rouchel Yan <rouchel.yan@maxwit.com>
 #
 # http://www.maxwit.com
-# http://maxwit.github.com
-# http://maxwit.googlecode.com
 #
 
 
@@ -12,24 +13,14 @@ MW_TOP_DIR=`dirname $0`
 cd ${MW_TOP_DIR}
 MW_TOP_DIR=${PWD}
 
-
 # Toolchain packages:
 MWP_KERNEL="linux-3.2.11"
 MWP_BINUTILS="binutils-2.22"
-###
+# fixme
 MWP_GCC_VER="4.7.0"
 MWP_GCC="gcc-${MWP_GCC_VER}"
-###
-#GLIBC_VER="2.11"
-#MWP_GLIBC="glibc-${GLIBC_VER}"
-#MWP_GLIBC_PORTS="glibc-ports-${GLIBC_VER}"
-###
-GLIBC_VER="2.15"
-MWP_GLIBC="eglibc-${GLIBC_VER}"
-MWP_GLIBC_PORTS="eglibc-ports-${GLIBC_VER}"
-
-# other packages
-#. ./pkg_list
+MWP_LIBC="eglibc-2.13"
+MWP_LIBC_PORTS=`echo ${MWP_LIBC} | sed 's/glibc-/glibc-ports-/'`
 
 BUILD_ARCH=`uname -m`
 BUILD_PLAT=`gcc -dumpmachine`
@@ -39,7 +30,7 @@ if [ "${BUILD_ARCH}" = x86_64 ]; then
 fi
 
 # fixme: prompt
-TARGET_CPU="cortex-a8"
+TARGET_CPU="cortex-a9"
 
 case "${TARGET_CPU}" in
 	arm920t)
@@ -98,7 +89,7 @@ case "${TARGET_CPU}" in
 		TARGET_PLAT="mips64el-maxwit-linux-gnu"
 		GCC_CPU_OPT="--with-abi=64 --with-tune=loongson2f"
 		BU_CPU_OPT="--enable-64-bit-bfd"
-		GLIBC_BUILDING_GCC="${TARGET_PLAT}-gcc -mabi=64"
+		LIBC_BUILDING_GCC="${TARGET_PLAT}-gcc -mabi=64"
 		;;
 
 	*)
@@ -131,7 +122,7 @@ export ROOTFS_PATH TOOLCHAIN_PATH BUILD_PLAT TARGET_PLAT
 export UTILS_ROOT GCC_CPU_OPT
 
 # fixme
-[ -z "${GLIBC_BUILDING_GCC}" ] && export GLIBC_BUILDING_GCC="${TARGET_PLAT}-gcc"
+[ -z "${LIBC_BUILDING_GCC}" ] && export LIBC_BUILDING_GCC="${TARGET_PLAT}-gcc"
 [ -z "${QEMU_ARCH}" ] && QEMU_ARCH=${TARGET_ARCH}
 
 # $1: package name
@@ -198,13 +189,10 @@ extract()
 	echo -n "."
 
 	case "${opkg}" in
-	glibc-*)
-		rm -rf glibc-ports-${GLIBC_VER}
-		tar xf ${SRC_PATH}/glibc-ports-${GLIBC_VER}.tar.* || exit 1
-		mv glibc-ports-${GLIBC_VER} ${MWP_GLIBC}/ports
-		;;
-	eglibc-*)
-		tar xf ${SRC_PATH}/eglibc-ports-${GLIBC_VER}.tar.* -C ${MWP_GLIBC} || exit 1
+	glibc-* | eglibc-*)
+		rm -rf ${MWP_LIBC_PORTS}
+		tar xf ${SRC_PATH}/${MWP_LIBC_PORTS}.tar.* || exit 1
+		mv ${MWP_LIBC_PORTS} ${MWP_LIBC}/ports
 		;;
 	esac
 
@@ -409,12 +397,12 @@ build_toolchain()
 		touch .__maxwit_kernel_header_installed
 	fi
 
-	export MWP_BINUTILS MWP_GCC MWP_GLIBC
+	export MWP_BINUTILS MWP_GCC MWP_LIBC
 
 	for pkg in \
-		${MWP_GLIBC} \
 		${MWP_BINUTILS} \
 		${MWP_GCC} \
+		${MWP_LIBC} \
 		;
 	do
 		build_package ${pkg}

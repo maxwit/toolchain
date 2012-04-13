@@ -4,7 +4,7 @@
 # http://maxwit.googlecode.com
 
 
-sed -i 's/-lgcc_eh//g' ../${MWP_GLIBC}/Makeconfig
+sed -i 's/-lgcc_eh//g' ../${MWP_LIBC}/Makeconfig
 
 echo libc_cv_forced_unwind=yes > config.cache
 echo libc_cv_c_cleanup=yes >> config.cache
@@ -12,10 +12,10 @@ echo libc_cv_gnu89_inline=yes >> config.cache
 echo "install_root=${TOOLCHAIN_PATH}" >> configparms
 
 BUILD_CC="gcc" \
-CC="${GLIBC_BUILDING_GCC}" \
+CC="${LIBC_BUILDING_GCC}" \
 AR="${TARGET_PLAT}-ar" \
 RANLIB="${TARGET_PLAT}-ranlib" \
-../${MWP_GLIBC}/configure \
+../${MWP_LIBC}/configure \
     --host=${TARGET_PLAT} \
     --build=${BUILD_PLAT} \
     --prefix=/usr \
