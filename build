@@ -133,9 +133,13 @@ extract()
 
 	cd ${BUILD_PATH}
 
-	upkg=${opkg}-build${2}
-	# rm -rf ${upkg}
-	mkdir -p ${upkg}
+	case ${opkg} in
+	binutils-* | gcc-* | glibc-* | eglibc-*)
+		upkg=${opkg}-build${2}
+		# rm -rf ${upkg}
+		mkdir -p ${upkg}
+		;;
+	esac
 
 	# fixme
 	if [ -d ${opkg} ]; then
