@@ -9,10 +9,10 @@ libc_cv_forced_unwind=yes \
 libc_cv_c_cleanup=yes \
 libc_cv_gnu99_inline=yes \
 HOST_CC=gcc \
-CC="${GLIBC_BUILDING_GCC}" \
+CC="${LIBC_BUILDING_GCC}" \
 AR="${TARGET_PLAT}-ar" \
 RANLIB="${TARGET_PLAT}-ranlib" \
-../${MWP_GLIBC}/configure \
+../${MWP_LIBC}/configure \
 	--prefix=/usr \
 	--build=${BUILD_PLAT} \
 	--host=${TARGET_PLAT} \
