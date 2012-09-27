@@ -14,7 +14,7 @@ MW_TOP_DIR=${PWD}
 
 
 # Toolchain packages:
-MWP_KERNEL="linux-2.6.38"
+MWP_KERNEL="linux-2.6.39"
 MWP_BINUTILS="binutils-2.21.1"
 ###
 MWP_GCC_VER="4.6.2"
@@ -143,6 +143,7 @@ extract()
 		mkdir -p ${upkg}
 		;;
 
+	# fixme!
 	gcc-*)
 		upkg=${opkg}-build1
 		# rm -rf ${upkg}
@@ -167,26 +168,21 @@ extract()
 
 	echo -n "."
 
-	rm -rf __temp__
-	mkdir -p __temp__
+	pkg_exist = 0
+	for ext in xz bz2 gz
+	do
+		if [ -f ${SRC_PATH}/${opkg}.tar.${ext} ]; then
+			pkg_exist = 1
+			break
+		fi
+	done
 
-	if test -f ${SRC_PATH}/${opkg}.tar.bz2; then
-		tar jxf ${SRC_PATH}/${opkg}.tar.bz2 -C __temp__ || exit 1
-	elif test -f ${SRC_PATH}/${opkg}.tar.gz; then
-		tar zxf ${SRC_PATH}/${opkg}.tar.gz -C __temp__ || exit 1
-	elif test -f ${SRC_PATH}/${opkg}.tar.xz; then
-		tar Jxf ${SRC_PATH}/${opkg}.tar.xz -C __temp__ || exit 1
-	else
-		tar xf ${SRC_PATH}/${opkg}* -C __temp__ || exit 1
+	if [ pkg_exist == 0 ]; then
+		echo "\"${SRC_PATH}/${opkg}\" does NOT exist!"
+		exit 1
 	fi
 
-	echo -n "."
-
-	# care about symbolic link?
-	rm -rf ${opkg} && \
-	mv __temp__/* ${opkg} && \
-	rm -rf __temp__ \
-	|| exit 1
+	tar xf ${SRC_PATH}/${opkg}.tar.${ext} || exit 1
 
 	echo -n "."
 
@@ -209,7 +205,7 @@ extract()
 	# before applying all available patches
 	for fpatch in `ls ${MW_TOP_DIR}/${opkg%-*}/${pkg_ver}/*.patch 2>/dev/null`
 	do
-		patch -p1 -i ${fpatch} || exit 1
+		patch -p1 < ${fpatch} || exit 1
 	done
 
 	if [ "${opkg}" != "${upkg}" ]; then
@@ -373,6 +369,7 @@ build_package()
 		fi
 	fi
 
+	# fixme: to be removed
 	if test -x ${sub_dir}/setup.sh; then
 		cd ${sub_dir} && \
 		. ./setup.sh || exit 1
@@ -392,7 +389,6 @@ build_toolchain()
 
 	echo ${PATH} | grep "${TOOLCHAIN_PATH}" > /dev/null \
 		|| export PATH=${PATH}:${TOOLCHAIN_PATH}/usr/bin
-
 
 	check_pkgs ${MWP_KERNEL}
 
@@ -448,6 +444,6 @@ echo -n "Archive GNU Toolchain ..." # rootfs
 
 cd ${TOOLCHAIN_PATH}/../
 TC_BIN=`basename ${TOOLCHAIN_PATH}`
-tar cvf toolchain-${TARGET_CPU}.tar ${TC_BIN}
+tar cJvf toolchain-${TARGET_CPU}.tar.xz ${TC_BIN}
 
 echo
