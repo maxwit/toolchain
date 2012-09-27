@@ -14,7 +14,7 @@ cd ${MW_TOP_DIR}
 MW_TOP_DIR=${PWD}
 
 # Toolchain packages:
-MWP_KERNEL="linux-3.2.11"
+MWP_KERNEL="linux-3.5.4"
 MWP_BINUTILS="binutils-2.22"
 MWP_GCC_VER="4.7.0"
 MWP_GCC="gcc-${MWP_GCC_VER}"
@@ -165,16 +165,16 @@ extract()
 
 	echo -n "."
 
-	pkg_exist = 0
+	pkg_exist=0
 	for ext in xz bz2 gz
 	do
 		if [ -f ${SRC_PATH}/${opkg}.tar.${ext} ]; then
-			pkg_exist = 1
+			pkg_exist=1
 			break
 		fi
 	done
 
-	if [ pkg_exist == 0 ]; then
+	if [ pkg_exist = 0 ]; then
 		echo "\"${SRC_PATH}/${opkg}\" does NOT exist!"
 		exit 1
 	fi
