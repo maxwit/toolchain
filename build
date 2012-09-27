@@ -133,20 +133,9 @@ extract()
 
 	cd ${BUILD_PATH}
 
-	case "${opkg}" in
-	binutils-* | glibc-* | eglibc-*)
-		upkg=${opkg}-build
-		# rm -rf ${upkg}
-		mkdir -p ${upkg}
-		;;
-
-	# fixme!
-	gcc-*)
-		upkg=${opkg}-build1
-		# rm -rf ${upkg}
-		mkdir -p ${upkg}
-		;;
-	esac
+	upkg=${opkg}-build${2}
+	# rm -rf ${upkg}
+	mkdir -p ${upkg}
 
 	# fixme
 	if [ -d ${opkg} ]; then
@@ -191,7 +180,7 @@ extract()
 		;;
 	esac
 
-	echo  " OK."
+	echo " OK."
 
 	cd ${opkg} || exit 1
 
@@ -206,7 +195,6 @@ extract()
 		cd ../${upkg}
 	fi
 }
-
 
 # Downlaod packages
 download_pkg()
@@ -318,15 +306,16 @@ check_pkgs()
 }
 
 
-# fixme for loop dependency
 # $1 = package
+# $2 for gcc only
 build_package()
 {
 	local df=""
 	local pkg=${1}
 	local sub_dir=`echo ${pkg} | sed 's:-\([0-9]\):/\1:'`
 	local src_dir="${BUILD_PATH}/${pkg}"
-	local built_flag=".__maxwit_built"
+	local built_flag=".__maxwit_built$2"
+	local build="build${2}.sh"
 
 	sub_dir="${MW_TOP_DIR}/${sub_dir}"
 
@@ -336,37 +325,25 @@ build_package()
 		return 0
 	fi
 
-	if [ -f ${sub_dir}/dep ]; then
-		for df in `cat ${sub_dir}/dep`
-		do
-			build_package ${df} || return 1
-		done
-	fi
-
 	check_pkgs ${pkg}
+	echo
 
-	extract ${pkg}
+	extract ${pkg} $2
 	echo
 
 	echo "Building \"${pkg}\" ..."
 
 	# fixme
-	if test -x ${sub_dir}/build.sh; then
-		${sub_dir}/build.sh || exit 1
+	if test -x ${sub_dir}/${build}; then
+		${sub_dir}/${build} || exit 1
 	else
 		pkg_dir=`dirname ${sub_dir}`
-		if test -x ${pkg_dir}/build.sh; then
-			${pkg_dir}/build.sh || exit 1
+		if test -x ${pkg_dir}/${build}; then
+			${pkg_dir}/${build} || exit 1
 		else
-			echo "No build.sh found!"
+			echo "No ${build} found!"
 			exit 1
 		fi
-	fi
-
-	# fixme: to be removed
-	if test -x ${sub_dir}/setup.sh; then
-		cd ${sub_dir} && \
-		. ./setup.sh || exit 1
 	fi
 
 	touch ${src_dir}/${built_flag}
@@ -375,65 +352,40 @@ build_package()
 	return 0
 }
 
+# export PATH
+grep "${TOOLCHAIN_PATH}" ~/.bashrc > /dev/null \
+	|| echo "export PATH=\${PATH}:${TOOLCHAIN_PATH}/usr/bin" >> ~/.bashrc
 
-build_toolchain()
-{
-	grep "${TOOLCHAIN_PATH}" ~/.bashrc > /dev/null \
-		|| echo "export PATH=\${PATH}:${TOOLCHAIN_PATH}/usr/bin" >> ~/.bashrc
+echo ${PATH} | grep "${TOOLCHAIN_PATH}" > /dev/null \
+	|| export PATH=${PATH}:${TOOLCHAIN_PATH}/usr/bin
 
-	echo ${PATH} | grep "${TOOLCHAIN_PATH}" > /dev/null \
-		|| export PATH=${PATH}:${TOOLCHAIN_PATH}/usr/bin
+# install kernel header
+check_pkgs ${MWP_KERNEL}
 
-	check_pkgs ${MWP_KERNEL}
+extract ${MWP_KERNEL}
+if [ ! -f .__maxwit_kernel_header_installed ]; then
+	make ARCH=${TARGET_ARCH} INSTALL_HDR_PATH=${TOOLCHAIN_PATH}/usr headers_install || exit 1
+	touch .__maxwit_kernel_header_installed
+fi
 
-	extract ${MWP_KERNEL}
-	if [ ! -f .__maxwit_kernel_header_installed ]; then
-		make ARCH=${TARGET_ARCH} INSTALL_HDR_PATH=${TOOLCHAIN_PATH}/usr headers_install || exit 1
-		touch .__maxwit_kernel_header_installed
-	fi
+# build GNU toolchain
+export MWP_BINUTILS MWP_GCC MWP_LIBC
 
-	export MWP_BINUTILS MWP_GCC MWP_LIBC
+build_package ${MWP_BINUTILS}
+build_package ${MWP_GCC} 1
+build_package ${MWP_LIBC}
+build_package ${MWP_GCC} 2
 
-	for pkg in \
-		${MWP_BINUTILS} \
-		${MWP_GCC} \
-		${MWP_LIBC} \
-		;
-	do
-		build_package ${pkg}
-		echo
-	done
+# create symbolic links
+cd ${TOOLCHAIN_PATH}/usr/bin
+for file in `ls ${TARGET_PLAT}-*`
+do
+	ln -vs ${file} ${TARGET_ARCH}-linux${file##${TARGET_PLAT}}
+done
 
-	if [ ! -f ${BUILD_PATH}/toolchain/${MWP_GCC}/.__maxwit_gccp2_built ]; then
-		gccp2_path=${BUILD_PATH}/${MWP_GCC}-build2 && \
-		mkdir -p ${gccp2_path} && \
-		cd ${gccp2_path} || exit 1
+ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
 
-		if [ -x ${MW_TOP_DIR}/gcc/${MWP_GCC_VER}/build_pass2.sh ]; then
-			${MW_TOP_DIR}/gcc/${MWP_GCC_VER}/build_pass2.sh || exit 1
-		elif [ -x ${MW_TOP_DIR}/gcc/build_pass2.sh ]; then
-			${MW_TOP_DIR}/gcc/build_pass2.sh
-		else
-			echo "No build_pass2.sh found!"
-			exit 1
-		fi
-
-		touch ../${MWP_GCC}/.__maxwit_gccp2_built
-
-		# fixme
-		cd ${TOOLCHAIN_PATH}/usr/bin
-		for file in `ls ${TARGET_PLAT}-*`
-		do
-			ln -vs ${file} ${TARGET_ARCH}-linux${file##${TARGET_PLAT}}
-		done
-
-		ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
-	fi
-}
-
-build_toolchain
-
-###
+# backup
 echo -n "Archive GNU Toolchain ..." # rootfs
 
 cd ${TOOLCHAIN_PATH}/../
