@@ -4,20 +4,29 @@
 # http://maxwit.googlecode.com
 
 
-sed -i 's/-lgcc_eh//g' ../${MWP_LIBC}/Makeconfig
+sed -i 's/-lgcc_eh//g' ../${1}/Makeconfig
 
 echo libc_cv_forced_unwind=yes > config.cache
 echo libc_cv_c_cleanup=yes >> config.cache
 echo libc_cv_gnu89_inline=yes >> config.cache
 echo "install_root=${TOOLCHAIN_PATH}" >> configparms
 
+case $3 in
+mips64el*)
+	libc_cc="${3}-gcc -mabi=64"
+	;;
+*)
+	libc_cc="${3}-gcc"
+	;;
+esac
+
 BUILD_CC="gcc" \
-CC="${LIBC_BUILDING_GCC}" \
-AR="${TARGET_PLAT}-ar" \
-RANLIB="${TARGET_PLAT}-ranlib" \
-../${MWP_LIBC}/configure \
-    --host=${TARGET_PLAT} \
-    --build=${BUILD_PLAT} \
+CC="${libc_cc}" \
+AR="${3}-ar" \
+RANLIB="${3}-ranlib" \
+../${1}/configure \
+    --host=${3} \
+    --build=${2} \
     --prefix=/usr \
     --disable-profile \
     --enable-kernel=2.6.0 \

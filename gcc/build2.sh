@@ -4,11 +4,11 @@
 # http://maxwit.googlecode.com
 #
 
-../${MWP_GCC}/configure \
+../${1}/configure \
 	--prefix=/usr \
-	--build=${BUILD_PLAT} \
-	--host=${BUILD_PLAT} \
-	--target=${TARGET_PLAT} \
+	--build=${2} \
+	--host=${2} \
+	--target=${3} \
 	--with-sysroot=${ROOTFS_PATH} \
 	--with-pkgversion="MaxWit Software, http://www.maxwit.com" \
 	--disable-multilib \
@@ -22,5 +22,5 @@
 	${GCC_CPU_OPT} \
 	|| exit 1
 
-make AS_FOR_TARGET=${TARGET_PLAT}-as LD_FOR_TARGET=${TARGET_PLAT}-ld && \
+make AS_FOR_TARGET=${3}-as LD_FOR_TARGET=${3}-ld && \
 make DESTDIR=${TOOLCHAIN_PATH} install || exit 1

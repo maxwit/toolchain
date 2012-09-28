@@ -9,29 +9,32 @@
 #
 
 
-MW_TOP_DIR=`dirname $0`
-cd ${MW_TOP_DIR}
-MW_TOP_DIR=${PWD}
+MWT_TOP=`dirname $0`
+cd ${MWT_TOP}
+MWT_TOP=${PWD}
 
-# Toolchain packages:
-MWP_KERNEL="linux-3.5.4"
-MWP_BINUTILS="binutils-2.22"
-MWP_GCC_VER="4.7.0"
-MWP_GCC="gcc-${MWP_GCC_VER}"
-MWP_LIBC="eglibc-2.13"
-MWP_LIBC_PORTS=`echo ${MWP_LIBC} | sed 's/glibc-/glibc-ports-/'`
+[ -e .config ] || \
+{
+	echo ".config does NOT exist! using default configuration:"
+	cp defconfig .config || exit 1
+	cat .config
+	echo
+}
 
-BUILD_ARCH=`uname -m`
-BUILD_PLAT=`gcc -dumpmachine`
+# fixme
+sed -i 's/ //g' .config
+. ./.config || exit 1
 
-if [ "${BUILD_ARCH}" = x86_64 ]; then
-	LIB_CFLAGS="-fPIC"
+ if [ -z "${CONFIG_BINUTILS}" -o \
+	-z "${CONFIG_GCC}" -o \
+	-z "${CONFIG_LIBC}" -o \
+	-z "${CONFIG_LINUX}" -o \
+	-z "${CONFIG_CPU}" ]; then
+	echo "missing configuration, pls check the .config file!"
+	exit 1
 fi
 
-# fixme: prompt
-TARGET_CPU="cortex-a9"
-
-case "${TARGET_CPU}" in
+case "${CONFIG_CPU}" in
 	arm920t)
 		TARGET_ARCH="arm"
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
@@ -88,7 +91,6 @@ case "${TARGET_CPU}" in
 		TARGET_PLAT="mips64el-maxwit-linux-gnu"
 		GCC_CPU_OPT="--with-abi=64 --with-tune=loongson2f"
 		BU_CPU_OPT="--enable-64-bit-bfd"
-		LIBC_BUILDING_GCC="${TARGET_PLAT}-gcc -mabi=64"
 		;;
 
 	*)
@@ -97,15 +99,16 @@ case "${TARGET_CPU}" in
 		;;
 esac
 
+# fixme: be configurable
 MAXWIT_TOP=/maxwit
 SRC_PATH=${MAXWIT_TOP}/source
 BUILD_PATH=${MAXWIT_TOP}/build/toolchain
-
-TARGET_TOP=/maxwit/target/${TARGET_CPU}
+TARGET_TOP=/maxwit/target/${CONFIG_CPU}
 ROOTFS_PATH=${TARGET_TOP}/rootfs
 #ROOTFS_PATH=${TARGET_TOP}/toolchain
 TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
-# UTILS_ROOT=${TARGET_TOP}/utils
+
+BUILD_PLAT=`gcc -dumpmachine`
 
 for path in ${TOOLCHAIN_PATH} ${ROOTFS_PATH} ${SRC_PATH} ${BUILD_PATH}
 do
@@ -116,12 +119,9 @@ do
 	}
 done
 
-export ROOTFS_PATH TOOLCHAIN_PATH BUILD_PLAT TARGET_PLAT
-# fixme
-export UTILS_ROOT GCC_CPU_OPT
+export ROOTFS_PATH TOOLCHAIN_PATH BU_CPU_OPT GCC_CPU_OPT
 
 # fixme
-[ -z "${LIBC_BUILDING_GCC}" ] && export LIBC_BUILDING_GCC="${TARGET_PLAT}-gcc"
 [ -z "${QEMU_ARCH}" ] && QEMU_ARCH=${TARGET_ARCH}
 
 # $1: package name
@@ -145,7 +145,6 @@ extract()
 	if [ -d ${opkg} ]; then
 		echo "package \"${opkg}\" exists, skipped"
 		cd ${upkg}
-		echo
 		return 0
 	fi
 
@@ -178,9 +177,10 @@ extract()
 
 	case "${opkg}" in
 	glibc-* | eglibc-*)
-		rm -rf ${MWP_LIBC_PORTS}
-		tar xf ${SRC_PATH}/${MWP_LIBC_PORTS}.tar.* || exit 1
-		mv ${MWP_LIBC_PORTS} ${MWP_LIBC}/ports
+		glibc_ports=`echo $CONFIG_LIBC | sed 's/glibc-/glibc-ports-/'`
+		rm -rf ${glibc_ports}
+		tar xf ${SRC_PATH}/${glibc_ports}.tar.* || exit 1
+		mv ${glibc_ports} ${CONFIG_LIBC}/ports
 		;;
 	esac
 
@@ -190,7 +190,7 @@ extract()
 
 	# make sure ``patch'' is installed
 	# before applying all available patches
-	for fpatch in `ls ${MW_TOP_DIR}/${opkg%-*}/${pkg_ver}/*.patch 2>/dev/null`
+	for fpatch in `ls ${MWT_TOP}/${opkg%-*}/${pkg_ver}/*.patch 2>/dev/null`
 	do
 		patch -p1 < ${fpatch} || exit 1
 	done
@@ -314,16 +314,15 @@ check_pkgs()
 # $2 for gcc only
 build_package()
 {
-	local df=""
 	local pkg=${1}
-	local sub_dir=`echo ${pkg} | sed 's:-\([0-9]\):/\1:'`
-	local src_dir="${BUILD_PATH}/${pkg}"
-	local built_flag=".__maxwit_built$2"
-	local build="build${2}.sh"
+	local pkg_dir=${pkg%%-[\.0-9]*}
+	local version=${pkg##${pkg_dir}-}
+	local build_file="build${2}.sh"
+	local built_flag=".__maxwit_built${2}"
 
-	sub_dir="${MW_TOP_DIR}/${sub_dir}"
+	pkg_dir="${MWT_TOP}/${pkg_dir}"
 
-	if [ -f "${src_dir}/${built_flag}" ]; then
+	if [ -f "${BUILD_PATH}/${pkg}/${built_flag}" ]; then
 		echo "\"${1}\" has been built."
 		echo
 		return 0
@@ -338,19 +337,18 @@ build_package()
 	echo "Building \"${pkg}\" ..."
 
 	# fixme
-	if test -x ${sub_dir}/${build}; then
-		${sub_dir}/${build} || exit 1
+	if test -x ${pkg_dir}/${version}/${build_file}; then
+		build_file=${pkg_dir}/${version}/${build_file}
+	elif test -x ${pkg_dir}/${build_file}; then
+		build_file=${pkg_dir}/${build_file}
 	else
-		pkg_dir=`dirname ${sub_dir}`
-		if test -x ${pkg_dir}/${build}; then
-			${pkg_dir}/${build} || exit 1
-		else
-			echo "No ${build} found!"
-			exit 1
-		fi
+		echo "No ${build_file} found!"
+		exit 1
 	fi
 
-	touch ${src_dir}/${built_flag}
+	${build_file} ${pkg} ${BUILD_PLAT} ${TARGET_PLAT} || exit 1
+
+	touch ${BUILD_PATH}/${pkg}/${built_flag}
 	echo
 
 	return 0
@@ -363,37 +361,32 @@ grep "${TOOLCHAIN_PATH}" ~/.bashrc > /dev/null \
 echo ${PATH} | grep "${TOOLCHAIN_PATH}" > /dev/null \
 	|| export PATH=${PATH}:${TOOLCHAIN_PATH}/usr/bin
 
-# install kernel header
-check_pkgs ${MWP_KERNEL}
+build_package ${CONFIG_LINUX}
 
-extract ${MWP_KERNEL}
-if [ ! -f .__maxwit_kernel_header_installed ]; then
-	make ARCH=${TARGET_ARCH} INSTALL_HDR_PATH=${TOOLCHAIN_PATH}/usr headers_install || exit 1
-	touch .__maxwit_kernel_header_installed
-fi
+build_package ${CONFIG_BINUTILS}
 
-# build GNU toolchain
-export MWP_BINUTILS MWP_GCC MWP_LIBC
+build_package ${CONFIG_GCC} 1
 
-build_package ${MWP_BINUTILS}
-build_package ${MWP_GCC} 1
-build_package ${MWP_LIBC}
-build_package ${MWP_GCC} 2
+build_package ${CONFIG_LIBC}
+
+build_package ${CONFIG_GCC} 2
 
 # create symbolic links
-cd ${TOOLCHAIN_PATH}/usr/bin
-for file in `ls ${TARGET_PLAT}-*`
-do
-	ln -vs ${file} ${TARGET_ARCH}-linux${file##${TARGET_PLAT}}
-done
+[ -L ${TOOLCHAIN_PATH}/usr/bin/${TARGET_ARCH}-linux-gcc ] || \
+{
+	cd ${TOOLCHAIN_PATH}/usr/bin
+	for file in `ls ${TARGET_PLAT}-*`
+	do
+		ln -vs ${file} ${TARGET_ARCH}-linux${file##${TARGET_PLAT}}
+	done
 
-ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
+	ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
+}
 
 # backup
-echo -n "Archive GNU Toolchain ..." # rootfs
-
-cd ${TOOLCHAIN_PATH}/../
-TC_BIN=`basename ${TOOLCHAIN_PATH}`
-tar cJvf toolchain-${TARGET_CPU}.tar.xz ${TC_BIN}
-
-echo
+#echo -n "Archive GNU Toolchain ..." # rootfs
+#
+#cd ${TOOLCHAIN_PATH}/../
+#TC_BIN=`basename ${TOOLCHAIN_PATH}`
+#tar cJvf toolchain-${CONFIG_CPU}.tar.xz ${TC_BIN}
+#echo

@@ -4,18 +4,27 @@
 # http://maxwit.googlecode.com
 #
 
+case $3 in
+mips64el*)
+	libc_cc="${3}-gcc -mabi=64"
+	;;
+*)
+	libc_cc="${3}-gcc"
+	;;
+esac
+
 echo "install_root=${TOOLCHAIN_PATH}" > configparms
 libc_cv_forced_unwind=yes \
 libc_cv_c_cleanup=yes \
 libc_cv_gnu99_inline=yes \
 HOST_CC=gcc \
-CC="${LIBC_BUILDING_GCC}" \
-AR="${TARGET_PLAT}-ar" \
-RANLIB="${TARGET_PLAT}-ranlib" \
-../${MWP_LIBC}/configure \
+CC="${libc_cc}" \
+AR="${3}-ar" \
+RANLIB="${3}-ranlib" \
+../${1}/configure \
 	--prefix=/usr \
-	--build=${BUILD_PLAT} \
-	--host=${TARGET_PLAT} \
+	--build=${2} \
+	--host=${3} \
 	--disable-profile \
 	--enable-add-ons \
 	--with-tls \

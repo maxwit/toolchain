@@ -4,11 +4,11 @@
 # http://maxwit.googlecode.com
 #
 
-../${MWP_BINUTILS}/configure \
+../${1}/configure \
 	--prefix=/usr \
-	--build=${BUILD_PLAT} \
-	--host=${BUILD_PLAT} \
-	--target=${TARGET_PLAT} \
+	--build=${2} \
+	--host=${2} \
+	--target=${3} \
 	--with-sysroot=${ROOTFS_PATH} \
 	--with-gmp=${UTILS_ROOT}/usr \
 	--with-mpfr=${UTILS_ROOT}/usr \
@@ -21,4 +21,4 @@
 make && \
 make DESTDIR=${TOOLCHAIN_PATH} install || exit 1
 
-cp -v ../${MWP_BINUTILS}/include/libiberty.h ${TOOLCHAIN_PATH}/usr/include
+cp -v ../${1}/include/libiberty.h ${TOOLCHAIN_PATH}/usr/include

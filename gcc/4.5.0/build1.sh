@@ -4,11 +4,11 @@
 # http://maxwit.googlecode.com
 #
 
-../${MWP_GCC}/configure \
+../${1}/configure \
 	--prefix=/usr \
-	--build=${BUILD_PLAT} \
-	--host=${BUILD_PLAT} \
-	--target=${TARGET_PLAT} \
+	--build=${2} \
+	--host=${2} \
+	--target=${3} \
 	--with-sysroot=${ROOTFS_PATH} \
 	--without-headers \
 	--with-newlib \
