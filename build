@@ -170,7 +170,7 @@ extract()
 	esac
 
 	# fixme
-	if [ -d ${opkg} ]; then
+	if [ -e ${opkg}/.__maxwit_extract ]; then
 		echo "package \"${opkg}\" exists, skipped"
 		cd ${upkg}
 		return 0
@@ -186,9 +186,9 @@ extract()
 	echo -n "."
 
 	pkg_exist=0
-	for ext in xz bz2 gz
+	for ext in tar.xz tar.bz2 tar.gz tgz
 	do
-		if [ -f ${SRC_PATH}/${opkg}.tar.${ext} ]; then
+		if [ -f ${SRC_PATH}/${opkg}.${ext} ]; then
 			pkg_exist=1
 			break
 		fi
@@ -199,7 +199,7 @@ extract()
 		exit 1
 	fi
 
-	tar xf ${SRC_PATH}/${opkg}.tar.${ext} || exit 1
+	tar xf ${SRC_PATH}/${opkg}.${ext} || exit 1
 
 	echo -n "."
 
@@ -223,6 +223,8 @@ extract()
 		patch -p1 < ${fpatch} || exit 1
 	done
 
+	touch .__maxwit_extract
+
 	if [ "${opkg}" != "${upkg}" ]; then
 		cd ../${upkg}
 	fi
@@ -235,12 +237,11 @@ build_package()
 	local pkg=${1}
 	local pkg_dir=${pkg%%-[\.0-9]*}
 	local version=${pkg##${pkg_dir}-}
-	local build_file="build${2}.sh"
-	local built_flag=".__maxwit_built${2}"
+	local build="build${2}.sh"
 
 	pkg_dir="${MWT_TOP}/${pkg_dir}"
 
-	if [ -f "${BUILD_PATH}/${pkg}/${built_flag}" ]; then
+	if [ -f "${BUILD_PATH}/${pkg}/.__maxwit_built${2}" ]; then
 		echo "\"${1}\" has been built."
 		echo
 		return 0
@@ -255,18 +256,18 @@ build_package()
 	echo "Building \"${pkg}\" ..."
 
 	# fixme
-	if test -x ${pkg_dir}/${version}/${build_file}; then
-		build_file=${pkg_dir}/${version}/${build_file}
-	elif test -x ${pkg_dir}/${build_file}; then
-		build_file=${pkg_dir}/${build_file}
+	if test -x ${pkg_dir}/${version}/${build}; then
+		build=${pkg_dir}/${version}/${build}
+	elif test -x ${pkg_dir}/${build}; then
+		build=${pkg_dir}/${build}
 	else
-		echo "No ${build_file} found in ${pkg_dir}!"
+		echo "No ${build} found in ${pkg_dir}!"
 		exit 1
 	fi
 
-	${build_file} ${pkg} ${BUILD_PLAT} ${TARGET_PLAT} || exit 1
+	${build} ${pkg} ${BUILD_PLAT} ${TARGET_PLAT} || exit 1
 
-	touch ${BUILD_PATH}/${pkg}/${built_flag}
+	touch ${BUILD_PATH}/${pkg}/.__maxwit_built${2}
 	echo
 
 	return 0
