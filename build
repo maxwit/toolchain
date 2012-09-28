@@ -124,6 +124,34 @@ export ROOTFS_PATH TOOLCHAIN_PATH BU_CPU_OPT GCC_CPU_OPT
 # fixme
 [ -z "${QEMU_ARCH}" ] && QEMU_ARCH=${TARGET_ARCH}
 
+# $1 = package name
+# $2 = /directory/of/the/url/file/
+download()
+{
+	local pkg=${1}
+	local dir=${2}
+
+	for ext in tar.xz tar.bz2 tar.gz tgz
+	do
+		if [ -f ${SRC_PATH}/${pkg}.${ext} ]; then
+			return 0
+		fi
+	done
+
+	if [ -x ${dir}/fetch.sh ]; then
+		${dir}/fetch.sh ${pkg} ${SRC_PATH} || exit 1
+	elif [ -e ${dir}/url ]; then
+		url=`grep "^\s*url\s*=" ${dir}/url | sed 's/^\s*url\s*=\s*//'`
+		ext=`grep "^\s*ext\s*=" ${dir}/url | sed 's/^\s*ext\s*=\s*//'`
+		wget ${url}/${pkg}.${ext} -P ${SRC_PATH} || exit 1
+	else
+		echo "\"${pkg} cannot be downloaded!"
+		exit 1
+	fi
+
+	return 0
+}
+
 # $1: package name
 extract()
 {
@@ -200,116 +228,6 @@ extract()
 	fi
 }
 
-# Downlaod packages
-download_pkg()
-{
-	local pkg_link_list
-	local pkg_link
-
-	local DL_CMD="wget -t 10 -w 5 -P ${SRC_PATH} -c"
-
-	pkg_link_list=${1}
-	shift
-
-	cd ${SRC_PATH}
-
-	while test $# -ge 1
-	do
-		for pkg_link in ${pkg_link_list}
-		do
-			if [ -n "`echo ${pkg_link} | grep ${1}`" ];then
-				pkg_name=`basename ${pkg_link}`
-				if [ ! -f "${pkg_name}" ]; then
-					${DL_CMD} ${pkg_link} -O ${pkg_name}
-				fi
-			fi
-		done
-
-		shift
-	done
-}
-
-
-print_link()
-{
-	local pkg_link_list
-	local pkg_link
-	local mw_pkg_url="${SRC_PATH}/mw_pkg_url.txt"
-
-	pkg_link_list=${1}
-	shift
-
-	rm -rf ${mw_pkg_url}
-
-	echo
-	echo "Generating package URLs:"
-	while test $# -ge 1
-	do
-		for pkg_link in ${pkg_link_list}
-		do
-			if [ -n "`echo ${pkg_link} | grep ${1}`" ];then
-				echo ${pkg_link} >>  ${mw_pkg_url}
-				echo "    ${pkg_link}"
-			fi
-		done
-		shift
-	done
-
-	echo
-	echo "All URLs are generated and saved to file \"${mw_pkg_url}\"."
-	echo "You may get them later with your favorate download utility :P"
-	echo
-}
-
-# one and only one argument is accepted!!
-check_pkgs()
-{
-	local lost_list=""
-	local pkg=""
-	local yes
-
-	for pkg in $1
-	do
-		ls ${SRC_PATH}/${pkg}.tar.gz > /dev/null 2>&1 || \
-		ls ${SRC_PATH}/${pkg}.tar.bz2 > /dev/null 2>&1 || \
-		ls ${SRC_PATH}/${pkg}.tgz > /dev/null 2>&1 || \
-		ls ${SRC_PATH}/${pkg}[ab].tar.gz > /dev/null 2>&1 || \
-		ls ${SRC_PATH}/${pkg}[ab].tar.bz2 > /dev/null 2>&1 || \
-		ls ${SRC_PATH}/${pkg}[ab].tgz > /dev/null 2>&1 || \
-		{
-			if [ -z "${lost_list}" ]; then
-				lost_list="${pkg}"
-			else
-				lost_list="${lost_list} ${pkg}"
-			fi
-		}
-	done
-
-	[ -z "${lost_list}" ] && return 0
-
-	echo
-	echo
-	echo "Following packages cound NOT be found in \"${SRC_PATH}\":"
-	for pkg in ${lost_list}
-	do
-		echo "    $pkg"
-	done
-
-	echo
-
-	echo
-	echo -n "Download them now? (y/n) "
-	read dl
-
-	if [ "${dl}" = "y" -o "${dl}" = "Y" -o "${dl}" = "dl" -o "${dl}" = "Yes" ]; then
-		download_pkg "${PLINK_LIST}" ${lost_list}
-	else
-		print_link "${PLINK_LIST}" ${lost_list}
-		exit 1
-	fi
-}
-
-
 # $1 = package
 # $2 for gcc only
 build_package()
@@ -328,7 +246,7 @@ build_package()
 		return 0
 	fi
 
-	check_pkgs ${pkg}
+	download ${pkg} ${pkg_dir}
 	echo
 
 	extract ${pkg} $2
@@ -342,7 +260,7 @@ build_package()
 	elif test -x ${pkg_dir}/${build_file}; then
 		build_file=${pkg_dir}/${build_file}
 	else
-		echo "No ${build_file} found!"
+		echo "No ${build_file} found in ${pkg_dir}!"
 		exit 1
 	fi
 
