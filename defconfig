@@ -7,6 +7,6 @@
 
 CONFIG_BINUTILS="binutils-2.22"
 CONFIG_GCC="gcc-4.7.0"
-CONFIG_LIBC="eglibc-2.13"
+CONFIG_LIBC="eglibc-2.17"
 CONFIG_LINUX="linux-3.5.4"
 CONFIG_CPU="cortex-a9"

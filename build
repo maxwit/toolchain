@@ -103,10 +103,11 @@ esac
 MAXWIT_TOP=/maxwit
 SRC_PATH=${MAXWIT_TOP}/source
 BUILD_PATH=${MAXWIT_TOP}/build/toolchain
-TARGET_TOP=/maxwit/target/${CONFIG_CPU}
-ROOTFS_PATH=${TARGET_TOP}/rootfs
-#ROOTFS_PATH=${TARGET_TOP}/toolchain
-TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
+TARGET_TOP=/maxwit/toolchain/${CONFIG_CPU}
+#ROOTFS_PATH=${TARGET_TOP}/rootfs
+#TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
+ROOTFS_PATH=${TARGET_TOP}
+TOOLCHAIN_PATH=${TARGET_TOP}
 
 BUILD_PLAT=`gcc -dumpmachine`
 

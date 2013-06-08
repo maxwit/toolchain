@@ -31,6 +31,7 @@ RANLIB="${3}-ranlib" \
     --disable-profile \
     --enable-kernel=2.6.0 \
 	--enable-add-ons \
+	--enable-obsolete-rpc \
     --with-tls \
     --with-__thread \
     --with-binutils=${TOOLCHAIN_PATH}/usr/bin \

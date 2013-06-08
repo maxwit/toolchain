@@ -8,6 +8,7 @@ EXT="tar.bz2"
 [ -d ${OUT} ] || mkdir -vp ${OUT} || exit 1
 
 cd ${OUT} && \
+echo "fetching $URL/$LIBC ..." && \
 svn co ${URL}/`echo ${LIBC} | sed 's/\./_/g'` ${LIBC} || exit 1
 
 cd ${LIBC}
