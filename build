@@ -35,24 +35,24 @@ sed -i 's/ //g' .config
 fi
 
 case "${CONFIG_CPU}" in
-	arm920t)
+	armv4t)
 		TARGET_ARCH="arm"
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
 		BU_CPU_OPT="--with-float=soft"
-		GCC_CPU_OPT="--with-float=soft --with-arch=armv4t --with-tune=arm920t"
+		GCC_CPU_OPT="--with-float=soft --with-arch=armv4t"
 		;;
 
-	arm1176jzf-s)
+	armv6zk)
 		TARGET_ARCH="arm"
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
-		GCC_CPU_OPT="--with-arch=armv6zk --with-tune=arm1176jzf-s"
+		GCC_CPU_OPT="--with-arch=armv6zk"
 		;;
 
-	arm926ej-s)
+	armv5te)
 		TARGET_ARCH="arm"
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
 		BU_CPU_OPT="--with-float=soft"
-		GCC_CPU_OPT="--with-float=soft --with-arch=armv5te --with-tune=arm926ej-s"
+		GCC_CPU_OPT="--with-float=soft --with-arch=armv5te"
 		;;
 
 	# fixme
@@ -60,21 +60,14 @@ case "${CONFIG_CPU}" in
 		TARGET_ARCH="arm"
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
 		BU_CPU_OPT="--with-float=soft"
-		GCC_CPU_OPT="--with-float=soft --with-arch=armv5te --with-tune=arm926ej-s"
+		GCC_CPU_OPT="--with-float=soft --with-arch=armv5te"
 		;;
 
-	cortex-a8)
+	armv7-a)
 		TARGET_ARCH="arm"
 		TARGET_PLAT="arm-maxwit-linux-gnueabi"
 		BU_CPU_OPT="--with-float=hard"
-		GCC_CPU_OPT="--with-fpu=vfp --with-float=hard --with-arch=armv7-a --with-tune=cortex-a8"
-		;;
-
-	cortex-a9)
-		TARGET_ARCH="arm"
-		TARGET_PLAT="arm-maxwit-linux-gnueabi"
-		BU_CPU_OPT="--with-float=hard"
-		GCC_CPU_OPT="--with-fpu=vfp --with-float=hard --with-arch=armv7-a --with-tune=cortex-a9"
+		GCC_CPU_OPT="--with-fpu=vfp --with-float=hard --with-arch=armv7-a"
 		;;
 
 	# fixme
@@ -105,9 +98,9 @@ SRC_PATH=${MAXWIT_TOP}/source
 BUILD_PATH=${MAXWIT_TOP}/build/toolchain
 TARGET_TOP=/maxwit/toolchain/${CONFIG_CPU}
 ROOTFS_PATH=${MAXWIT_TOP}/image/rootfs
-TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
+#TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
 #ROOTFS_PATH=${TARGET_TOP}
-#TOOLCHAIN_PATH=${TARGET_TOP}
+TOOLCHAIN_PATH=${TARGET_TOP}
 
 BUILD_PLAT=`gcc -dumpmachine`
 
