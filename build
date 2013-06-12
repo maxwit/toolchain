@@ -104,10 +104,10 @@ MAXWIT_TOP=/maxwit
 SRC_PATH=${MAXWIT_TOP}/source
 BUILD_PATH=${MAXWIT_TOP}/build/toolchain
 TARGET_TOP=/maxwit/toolchain/${CONFIG_CPU}
-#ROOTFS_PATH=${TARGET_TOP}/rootfs
-#TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
-ROOTFS_PATH=${TARGET_TOP}
-TOOLCHAIN_PATH=${TARGET_TOP}
+ROOTFS_PATH=${MAXWIT_TOP}/image/rootfs
+TOOLCHAIN_PATH=${TARGET_TOP}/toolchain
+#ROOTFS_PATH=${TARGET_TOP}
+#TOOLCHAIN_PATH=${TARGET_TOP}
 
 BUILD_PLAT=`gcc -dumpmachine`
 
@@ -300,13 +300,13 @@ build_package ${CONFIG_GCC} 2
 		ln -vs ${file} ${TARGET_ARCH}-linux${file##${TARGET_PLAT}}
 	done
 
-	ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
+	#ln -vs ${TARGET_PLAT}-gcc ${TARGET_PLAT}-cc
 }
 
 # backup
-#echo -n "Archive GNU Toolchain ..." # rootfs
-#
-#cd ${TOOLCHAIN_PATH}/../
-#TC_BIN=`basename ${TOOLCHAIN_PATH}`
-#tar cJvf toolchain-${CONFIG_CPU}.tar.xz ${TC_BIN}
-#echo
+echo -n "Archive GNU Toolchain ..." # rootfs
+
+cd ${TOOLCHAIN_PATH}/../
+TC_BIN=`basename ${TOOLCHAIN_PATH}`
+tar cJvf toolchain-${CONFIG_CPU}.tar.xz ${TC_BIN}
+echo
